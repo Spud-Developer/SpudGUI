@@ -10,7 +10,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 local VisualTab = Window:CreateTab("Visual", 82689258615333) -- Change the icon ID if needed
-local FunTab = Window:CreateTab("Fun", 4483362458) -- You can change the icon ID
+local FunTab = Window:CreateTab("Fun", 98801946053126) -- You can change the icon ID
 
 local espEnabled = false
 local nametagEnabled = false
@@ -155,6 +155,110 @@ VisualTab:CreateButton({
 FunTab:CreateButton({
     Name = "Kick On Death",
     Callback = kickOnDeath
+})
+
+VisualTab:CreateButton({
+    Name = "Spectronite Avatar",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+
+        -- ✅ Sound effect (plays directly on player)
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://111598396888819"
+        sound.Volume = 1
+        sound.Name = "AvatarChangeSound"
+        sound.Parent = player
+
+        sound:Play()
+        sound.Loaded:Connect(function()
+            sound:Play()
+        end)
+
+        game.Debris:AddItem(sound, 5)
+
+        -- Fade helper
+        local function fadeIn(obj, prop, start, finish, duration)
+            local steps = 20
+            for i = 0, steps do
+                local alpha = i / steps
+                obj[prop] = start + (finish - start) * alpha
+                task.wait(duration / steps)
+            end
+        end
+
+        -- Appearance change
+        local function changeAppearance(character)
+            if not character then return end
+
+            local highlight = Instance.new("Highlight")
+            highlight.Parent = character
+            highlight.FillColor = Color3.fromRGB(0, 0, 0)
+            highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+            highlight.FillTransparency = 1
+            highlight.OutlineTransparency = 1
+
+            task.spawn(function()
+                fadeIn(highlight, "FillTransparency", 1, 0, 1)
+            end)
+            task.spawn(function()
+                fadeIn(highlight, "OutlineTransparency", 1, 0, 1)
+            end)
+
+            task.delay(1.1, function()
+                for _, item in ipairs(character:GetChildren()) do
+                    if item:IsA("Accessory") or item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("Decal") then
+                        item:Destroy()
+                    elseif item:IsA("BasePart") or item:IsA("MeshPart") then
+                        item.Color = Color3.fromRGB(0, 0, 0)
+                        item.Material = Enum.Material.SmoothPlastic
+                    end
+                end
+            end)
+        end
+
+        -- Billboard eye
+        local camera = workspace.CurrentCamera
+        local billboardGui
+
+        local function onCharacterAdded(character)
+            local head = character:WaitForChild("Head")
+
+            billboardGui = Instance.new("BillboardGui")
+            billboardGui.Name = "HeadImageGui"
+            billboardGui.Adornee = head
+            billboardGui.Size = UDim2.new(1.1, 0, 1.1, 0)
+            billboardGui.StudsOffset = Vector3.new(0, 0, 0)
+            billboardGui.AlwaysOnTop = true
+            billboardGui.Parent = head
+
+            local imageLabel = Instance.new("ImageLabel")
+            imageLabel.Size = UDim2.new(1, 0, 1, 0)
+            imageLabel.BackgroundTransparency = 1
+            imageLabel.ImageTransparency = 1
+            imageLabel.Image = "rbxassetid://82689258615333"
+            imageLabel.Parent = billboardGui
+
+            -- Eye fade in
+            task.spawn(function()
+                fadeIn(imageLabel, "ImageTransparency", 1, 0, 1)
+            end)
+
+            changeAppearance(character)
+        end
+
+        if player.Character then
+            onCharacterAdded(player.Character)
+        end
+        player.CharacterAdded:Connect(onCharacterAdded)
+
+        -- Optional: disable eye in first person
+        game:GetService("RunService").RenderStepped:Connect(function()
+            if billboardGui and camera then
+                local zoom = (camera.CFrame.Position - camera.Focus.Position).Magnitude
+                billboardGui.Enabled = zoom > 1
+            end
+        end)
+    end
 })
 
 local function updatePlayers()
