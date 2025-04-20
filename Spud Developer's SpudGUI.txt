@@ -167,7 +167,7 @@ VisualTab:CreateButton({
 
         -- Helper: Fade properties
         local function fadeIn(obj, prop, start, finish, duration)
-            local steps = 20
+            local steps = 100
             for i = 0, steps do
                 local alpha = i / steps
                 obj[prop] = start + (finish - start) * alpha
