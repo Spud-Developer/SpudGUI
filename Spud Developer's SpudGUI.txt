@@ -14,6 +14,7 @@ local FunTab = Window:CreateTab("Fun", 98801946053126) -- You can change the ico
 
 local espEnabled = false
 local nametagEnabled = false
+local spectroniteMode = false
 local highlights = {}
 local nametags = {}
 
@@ -158,25 +159,13 @@ FunTab:CreateButton({
 })
 
 VisualTab:CreateButton({
-    Name = "Spectronite Avatar",
+    Name = "Spectronite Mode",
     Callback = function()
         local player = game.Players.LocalPlayer
+        local camera = workspace.CurrentCamera
+        spectroniteMode = not spectroniteMode
 
-        -- ✅ Sound effect (plays directly on player)
-        local sound = Instance.new("Sound")
-        sound.SoundId = "rbxassetid://111598396888819"
-        sound.Volume = 1
-        sound.Name = "AvatarChangeSound"
-        sound.Parent = player
-
-        sound:Play()
-        sound.Loaded:Connect(function()
-            sound:Play()
-        end)
-
-        game.Debris:AddItem(sound, 5)
-
-        -- Fade helper
+        -- Helper: Fade properties
         local function fadeIn(obj, prop, start, finish, duration)
             local steps = 20
             for i = 0, steps do
@@ -186,10 +175,65 @@ VisualTab:CreateButton({
             end
         end
 
-        -- Appearance change
-        local function changeAppearance(character)
+        -- Helper: Play sound on player
+        local function playSpectroniteSound()
+            local sound = Instance.new("Sound")
+            sound.SoundId = "rbxassetid://111598396888819"
+            sound.Volume = 1
+            sound.Name = "SpectroniteSound"
+            sound.Parent = player
+            sound:Play()
+            game.Debris:AddItem(sound, 5)
+        end
+
+        -- Helper: Eye overlay
+        local function applySpectroniteEye(character)
+            local head = character:FindFirstChild("Head")
+            if not head then return end
+
+            local gui = Instance.new("BillboardGui")
+            gui.Name = "HeadImageGui"
+            gui.Adornee = head
+            gui.Size = UDim2.new(1.1, 0, 1.1, 0)
+            gui.StudsOffset = Vector3.new(0, 0, 0)
+            gui.AlwaysOnTop = true
+            gui.Parent = head
+
+            local imageLabel = Instance.new("ImageLabel")
+            imageLabel.Size = UDim2.new(1, 0, 1, 0)
+            imageLabel.BackgroundTransparency = 1
+            imageLabel.ImageTransparency = 1
+            imageLabel.Image = "rbxassetid://82689258615333"
+            imageLabel.Parent = gui
+
+            -- Eye fade in
+            task.spawn(function()
+                fadeIn(imageLabel, "ImageTransparency", 1, 0, 1)
+            end)
+
+            -- Hide eye in first person
+            game:GetService("RunService").RenderStepped:Connect(function()
+                if gui and camera then
+                    local zoom = (camera.CFrame.Position - camera.Focus.Position).Magnitude
+                    gui.Enabled = zoom > 1
+                end
+            end)
+        end
+
+        -- First-time transformation (with fade, then cleanup)
+        local function activateSpectronite(character)
             if not character then return end
 
+            playSpectroniteSound()
+
+            -- Remove any previous highlight
+            for _, child in ipairs(character:GetChildren()) do
+                if child:IsA("Highlight") then
+                    child:Destroy()
+                end
+            end
+
+            -- Create highlight
             local highlight = Instance.new("Highlight")
             highlight.Parent = character
             highlight.FillColor = Color3.fromRGB(0, 0, 0)
@@ -197,6 +241,7 @@ VisualTab:CreateButton({
             highlight.FillTransparency = 1
             highlight.OutlineTransparency = 1
 
+            -- Start fading highlight
             task.spawn(function()
                 fadeIn(highlight, "FillTransparency", 1, 0, 1)
             end)
@@ -204,6 +249,10 @@ VisualTab:CreateButton({
                 fadeIn(highlight, "OutlineTransparency", 1, 0, 1)
             end)
 
+            -- Eye
+            applySpectroniteEye(character)
+
+            -- After fade, clean and apply materials
             task.delay(1.1, function()
                 for _, item in ipairs(character:GetChildren()) do
                     if item:IsA("Accessory") or item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("Decal") then
@@ -216,46 +265,50 @@ VisualTab:CreateButton({
             end)
         end
 
-        -- Billboard eye
-        local camera = workspace.CurrentCamera
-        local billboardGui
+        -- Reapply every 5 seconds (instant, no fade)
+        task.spawn(function()
+            while spectroniteMode do
+                task.wait(5)
 
-        local function onCharacterAdded(character)
-            local head = character:WaitForChild("Head")
+                local character = player.Character
+                if character then
+                    -- Remove old highlight
+                    for _, child in ipairs(character:GetChildren()) do
+                        if child:IsA("Highlight") then
+                            child:Destroy()
+                        end
+                    end
 
-            billboardGui = Instance.new("BillboardGui")
-            billboardGui.Name = "HeadImageGui"
-            billboardGui.Adornee = head
-            billboardGui.Size = UDim2.new(1.1, 0, 1.1, 0)
-            billboardGui.StudsOffset = Vector3.new(0, 0, 0)
-            billboardGui.AlwaysOnTop = true
-            billboardGui.Parent = head
+                    -- Recreate highlight instantly
+                    local highlight = Instance.new("Highlight")
+                    highlight.Parent = character
+                    highlight.FillColor = Color3.fromRGB(0, 0, 0)
+                    highlight.OutlineColor = Color3.fromRGB(0, 255, 0)
+                    highlight.FillTransparency = 0
+                    highlight.OutlineTransparency = 0
 
-            local imageLabel = Instance.new("ImageLabel")
-            imageLabel.Size = UDim2.new(1, 0, 1, 0)
-            imageLabel.BackgroundTransparency = 1
-            imageLabel.ImageTransparency = 1
-            imageLabel.Image = "rbxassetid://82689258615333"
-            imageLabel.Parent = billboardGui
+                    -- Remove accessories & reapply black material
+                    for _, item in ipairs(character:GetChildren()) do
+                        if item:IsA("Accessory") or item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") or item:IsA("Decal") then
+                            item:Destroy()
+                        elseif item:IsA("BasePart") or item:IsA("MeshPart") then
+                            item.Color = Color3.fromRGB(0, 0, 0)
+                            item.Material = Enum.Material.SmoothPlastic
+                        end
+                    end
+                end
+            end
+        end)
 
-            -- Eye fade in
-            task.spawn(function()
-                fadeIn(imageLabel, "ImageTransparency", 1, 0, 1)
-            end)
-
-            changeAppearance(character)
-        end
-
+        -- Apply immediately and on respawn
         if player.Character then
-            onCharacterAdded(player.Character)
+            activateSpectronite(player.Character)
         end
-        player.CharacterAdded:Connect(onCharacterAdded)
 
-        -- Optional: disable eye in first person
-        game:GetService("RunService").RenderStepped:Connect(function()
-            if billboardGui and camera then
-                local zoom = (camera.CFrame.Position - camera.Focus.Position).Magnitude
-                billboardGui.Enabled = zoom > 1
+        player.CharacterAdded:Connect(function(char)
+            if spectroniteMode then
+                task.wait(1)
+                activateSpectronite(char)
             end
         end)
     end
