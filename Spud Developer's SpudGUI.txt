@@ -10,6 +10,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 local VisualTab = Window:CreateTab("Visual", 82689258615333) -- Change the icon ID if needed
+local FunTab = Window:CreateTab("Fun", 4483362458) -- You can change the icon ID
 
 local espEnabled = false
 local nametagEnabled = false
@@ -121,6 +122,26 @@ local function toggleNametags()
     end
 end
 
+-- Function to kick the player upon death
+local function kickOnDeath()
+    local player = game.Players.LocalPlayer
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character:FindFirstChild("Humanoid").Died:Connect(function()
+            player:Kick("You died! Better luck next time.")
+        end)
+    end
+
+    -- Also ensure future characters are handled
+    player.CharacterAdded:Connect(function(character)
+        local hum = character:WaitForChild("Humanoid", 5)
+        if hum then
+            hum.Died:Connect(function()
+                player:Kick("You died! Better luck next time.")
+            end)
+        end
+    end)
+end
+
 VisualTab:CreateButton({
     Name = "ESPud",
     Callback = toggleESP
@@ -129,6 +150,11 @@ VisualTab:CreateButton({
 VisualTab:CreateButton({
     Name = "ESP Name Tags",
     Callback = toggleNametags
+})
+
+FunTab:CreateButton({
+    Name = "Kick On Death",
+    Callback = kickOnDeath
 })
 
 local function updatePlayers()
