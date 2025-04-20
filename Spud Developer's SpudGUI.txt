@@ -1,0 +1,179 @@
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Spud Developer's SpudGUI",
+    LoadingTitle = "Spud Developer's SpudGUI",
+    LoadingSubtitle = "Loading, please wait!",
+    ConfigurationSaving = {
+        Enabled = true
+    }
+})
+
+local VisualTab = Window:CreateTab("Visual", 82689258615333) -- Change the icon ID if needed
+
+local espEnabled = false
+local nametagEnabled = false
+local highlights = {}
+local nametags = {}
+
+local function applyESP(player)
+    if not espEnabled or player == game.Players.LocalPlayer then return end
+    
+    local character = player.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        if highlights[player] then
+            highlights[player]:Destroy()
+        end
+        
+        local highlight = Instance.new("Highlight")
+        highlight.Adornee = character
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlight.Parent = game.CoreGui
+        highlights[player] = highlight
+
+        local teamColor = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
+        highlight.FillColor = teamColor
+        highlight.OutlineColor = teamColor
+    end
+end
+
+local function applyNametag(player)
+    if not nametagEnabled or player == game.Players.LocalPlayer then return end
+    
+    local character = player.Character
+    if character and character:FindFirstChild("Head") then
+        if nametags[player] then
+            nametags[player]:Destroy()
+        end
+        
+        local billboard = Instance.new("BillboardGui")
+        billboard.Adornee = character:FindFirstChild("Head")
+        billboard.Size = UDim2.new(0, 100, 0, 30)
+        billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+        billboard.AlwaysOnTop = true
+        billboard.MaxDistance = math.huge
+        billboard.Parent = game.CoreGui
+
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(1, 0, 1, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.TextScaled = true
+        textLabel.Font = Enum.Font.BuilderSansBold
+        textLabel.Text = player.Name
+        textLabel.TextColor3 = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
+        textLabel.TextStrokeTransparency = 0
+        textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        textLabel.Parent = billboard
+
+        nametags[player] = billboard
+    end
+end
+
+local function refreshESP()
+    while true do
+        if espEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                applyESP(player)
+            end
+        end
+        if nametagEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                applyNametag(player)
+            end
+        end
+        task.wait(5) -- Refresh every 5 seconds
+    end
+end
+
+task.spawn(refreshESP)
+
+local function toggleESP()
+    espEnabled = not espEnabled
+    
+    if espEnabled then
+        for _, player in pairs(game.Players:GetPlayers()) do
+            applyESP(player)
+        end
+    else
+        for _, highlight in pairs(highlights) do
+            if highlight then
+                highlight:Destroy()
+            end
+        end
+        highlights = {}
+    end
+end
+
+local function toggleNametags()
+    nametagEnabled = not nametagEnabled
+    
+    if nametagEnabled then
+        for _, player in pairs(game.Players:GetPlayers()) do
+            applyNametag(player)
+        end
+    else
+        for _, nametag in pairs(nametags) do
+            if nametag then
+                nametag:Destroy()
+            end
+        end
+        nametags = {}
+    end
+end
+
+VisualTab:CreateButton({
+    Name = "ESPud",
+    Callback = toggleESP
+})
+
+VisualTab:CreateButton({
+    Name = "ESP Name Tags",
+    Callback = toggleNametags
+})
+
+local function updatePlayers()
+    for _, player in pairs(game.Players:GetPlayers()) do
+        applyESP(player)
+        applyNametag(player)
+        player.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            applyESP(player)
+            applyNametag(player)
+        end)
+    end
+end
+
+task.spawn(function()
+    while true do
+        if espEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                applyESP(player)
+            end
+        end
+        if nametagEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                applyNametag(player)
+            end
+        end
+        task.wait(5)
+    end
+end)
+
+game.Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        task.wait(1.5)
+        applyESP(player)
+        applyNametag(player)
+    end)
+end)
+
+game.Players.PlayerRemoving:Connect(function(player)
+    if highlights[player] then
+        highlights[player]:Destroy()
+        highlights[player] = nil
+    end
+    if nametags[player] then
+        nametags[player]:Destroy()
+        nametags[player] = nil
+    end
+end)
