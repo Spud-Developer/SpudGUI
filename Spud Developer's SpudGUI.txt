@@ -10,12 +10,13 @@ local Window = Rayfield:CreateWindow({
 })
 
 local VisualTab = Window:CreateTab("Visual", 82689258615333) -- Change the icon ID if needed
-local FunTab = Window:CreateTab("Fun", 98801946053126) -- You can change the icon ID
+local MiscTab = Window:CreateTab("Misc", 98801946053126) -- You can change the icon ID
 
 local espEnabled = false
 local nametagEnabled = false
 local spectroniteMode = false
 local FlashlightOn = false
+local transbaseenabled = false
 local highlights = {}
 local nametags = {}
 
@@ -90,6 +91,12 @@ end
 
 task.spawn(refreshESP)
 
+local function transbaseplate()
+    game.workspace.Baseplate.Transparency = 1
+    game.workspace.Baseplate.Material = "Metal"
+
+end
+
 local function toggleESP()
     espEnabled = not espEnabled
     
@@ -124,7 +131,7 @@ local function toggleNametags()
     end
 end
 
--- Function to kick the player upon death
+-- Miscction to kick the player upon death
 local function kickOnDeath()
     local player = game.Players.LocalPlayer
     if player.Character and player.Character:FindFirstChild("Humanoid") then
@@ -186,7 +193,12 @@ VisualTab:CreateButton({
 	end,
 })
 
-VisualTab:CreateButton({
+MiscTab:CreateButton({
+    Name = "Transparent Baseplate",
+    Callback = transbaseplate
+})
+
+MiscTab:CreateButton({
     Name = "Spectronite Mode",
     Callback = function()
         local player = game.Players.LocalPlayer
@@ -342,7 +354,7 @@ VisualTab:CreateButton({
     end
 })
 
-FunTab:CreateButton({
+MiscTab:CreateButton({
     Name = "Kick On Death",
     Callback = kickOnDeath
 })
@@ -393,3 +405,6 @@ game.Players.PlayerRemoving:Connect(function(player)
         nametags[player] = nil
     end
 end)
+
+game.workspace.Baseplate.Material = "Grass"
+game.Workspace.Baseplate.Color = Color3.fromRGB(75, 151, 75)
