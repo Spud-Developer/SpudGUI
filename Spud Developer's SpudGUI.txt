@@ -15,6 +15,7 @@ local FunTab = Window:CreateTab("Fun", 98801946053126) -- You can change the ico
 local espEnabled = false
 local nametagEnabled = false
 local spectroniteMode = false
+local FlashlightOn = false
 local highlights = {}
 local nametags = {}
 
@@ -153,9 +154,36 @@ VisualTab:CreateButton({
     Callback = toggleNametags
 })
 
-FunTab:CreateButton({
-    Name = "Kick On Death",
-    Callback = kickOnDeath
+VisualTab:CreateButton({
+	Name = "Flashlight",
+	Callback = function()
+		if FlashlightOn then
+			return -- Do nothing if flashlight is already on
+		end
+
+		FlashlightOn = true
+
+		local Players = game:GetService("Players")
+		local player = Players.LocalPlayer
+
+		local function runScriptTwice(character)
+			for i = 1, 1 do
+				local pointLight = Instance.new("PointLight")
+				pointLight.Parent = character:WaitForChild("HumanoidRootPart")
+			end
+		end
+
+		local function onCharacterAdded(character)
+			character:WaitForChild("HumanoidRootPart")
+			runScriptTwice(character)
+		end
+
+		player.CharacterAdded:Connect(onCharacterAdded)
+
+		if player.Character then
+			onCharacterAdded(player.Character)
+		end
+	end,
 })
 
 VisualTab:CreateButton({
@@ -312,6 +340,11 @@ VisualTab:CreateButton({
             end
         end)
     end
+})
+
+FunTab:CreateButton({
+    Name = "Kick On Death",
+    Callback = kickOnDeath
 })
 
 local function updatePlayers()
